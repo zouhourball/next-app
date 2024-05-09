@@ -1,16 +1,14 @@
-import Link from "next/link"
+import React from 'react'
 import {getTopHeadlinesBlogs} from '@/api'
+import {articleType} from '../types'
 import { v4 as uuidv4 } from 'uuid'
 import moment from "moment"
-import {articleType} from './types'
+import Link from "next/link"
 
 
-
-export default async function Home() {
-
-  const blogsData = await getTopHeadlinesBlogs({})
+export default async function page() {
+  const blogsData = await getTopHeadlinesBlogs({pageSize:10})
   const articles = blogsData.articles
-  //console.log('ffffffff', articles)
   const renderArticles = ()=> articles?.filter((article: articleType)=> article.title !== '[Removed]').map((article:articleType) => {
     const arKey = uuidv4()
     
@@ -32,24 +30,17 @@ export default async function Home() {
           </div>
         </div>
   )})
+
   return (
     <div className="container px-4 pt-5">
-      <h1>Welcome to this News page</h1>
-      <span>This Blog is to showcase Development process only</span>
       <div className="row mt-5">
         <div className="col-12">
           <h1>Top headlines</h1>
         </div>
       </div>
       <div className="row mt-5">
-        {renderArticles()}
-      </div> 
-      <div className="row w-auto mt-5">
-        <span>
-        <Link href={
-          '/top-headlines'
-          } className="btn btn-primary">See More</Link>
-        </span>
+      {renderArticles()}
+
       </div>
     </div>
   )
