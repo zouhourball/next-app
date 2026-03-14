@@ -7,16 +7,20 @@ import Link from 'next/link'
       <div className="container-fluid">
         <ul className="navbar-nav">
           <li className="nav-item">
-            <Link className='nav-link active' href="/">Home</Link>
+            <Link className='nav-link active' href="/">Accueil</Link>
+          </li>
+          
+          <li className="nav-item">
+            <Link className='nav-link' href="/makeup-products">Produits Maquillage</Link>
           </li>
           <li className="nav-item">
-            <Link className='nav-link' href="/membership">MemberShip</Link>
+            <Link className='nav-link' href="/beauty-facts">Beauté & Ingrédients</Link>
           </li>
           <li className="nav-item">
-            <Link className='nav-link' href="/write">Write</Link>
+            <Link className='nav-link' href="/videos">Vidéos</Link>
           </li>
           <li className="nav-item">
-            <Link className='nav-link' href="/contact">Contact us</Link>
+            <Link className='nav-link' href="/contact">Contact</Link>
           </li>
         </ul>
       </div>

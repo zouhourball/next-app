@@ -12,8 +12,8 @@ export default function page() {
   }
   return (
     <div>
-      <h1>Contact page</h1>
-      <button onClick={makeCall}>make api call</button>
+      <h1>Page de contact</h1>
+      <button onClick={makeCall}>Envoyer</button>
     </div>
   )
 }

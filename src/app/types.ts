@@ -11,3 +11,55 @@ export type articleType = {
     publishedAt: string,
     content: string | null
   }
+
+export type MakeupProductType = {
+  id: number;
+  brand: string | null;
+  name: string;
+  price: string | null;
+  price_sign: string | null;
+  currency: string | null;
+  image_link: string | null;
+  product_link: string | null;
+  description: string | null;
+  rating: number | null;
+  category: string | null;
+  product_type: string | null;
+  tag_list: string[];
+}
+
+export type BeautyFactProductType = {
+  code: string;
+  product_name: string;
+  brands: string;
+  image_url: string;
+  ingredients_text: string;
+  categories: string;
+  quantity: string;
+}
+
+export type BeautyFactsResponseType = {
+  products: BeautyFactProductType[];
+  count: number;
+  page: number;
+  page_size: string;
+}
+
+export type YoutubeVideoType = {
+  id: { videoId: string };
+  snippet: {
+    title: string;
+    description: string;
+    channelTitle: string;
+    publishedAt: string;
+    thumbnails: {
+      medium: { url: string; width: number; height: number };
+    };
+  };
+}
+
+export type YoutubeSearchResponseType = {
+  items: YoutubeVideoType[];
+  pageInfo: { totalResults: number; resultsPerPage: number };
+  error?: { message: string };
+}

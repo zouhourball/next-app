@@ -7,8 +7,8 @@ import NavBar from '@/components/NavBar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Blog',
-  description: 'Blog created with nextJs',
+  title: 'Blog Beauté',
+  description: 'Blog beauté français — produits, tendances et vidéos',
 }
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <body className={inter.className}>
         <NavBar />{children}</body>
     </html>
