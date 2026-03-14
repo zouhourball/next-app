@@ -6,13 +6,12 @@ A French-market beauty blog built with **Next.js 14** (App Router). It lets user
 
 ## Features
 
-- **Live product search** — debounced search (600 ms) with automatic spelling correction and English→French term translation (e.g. "sunscreen" → "crème solaire", "loreal" → "l'oréal")
-- **Smart tag suggestions** — contextual filter chips appear as the user types (e.g. typing "mascara" suggests "volume", "waterproof", "vegan"…)
-- **Barcode scanner** — camera overlay using the native `BarcodeDetector` Web API (no library needed); scans EAN-13, EAN-8, UPC-A, UPC-E and QR codes and looks up the product instantly
+- **Live product search** — debounced search 
+- **Smart tag suggestions** — contextual filter chips appear as the user types
+- **Barcode scanner** — camera overlay using the native `BarcodeDetector` Web API scans EAN-13, EAN-8, UPC-A, UPC-E and QR codes and looks up the product instantly
 - **Makeup products page** — catalog sourced from the Makeup API
-- **Beauty & Ingredients page** — detailed product data (ingredients, brands, quantities) from Open Beauty Facts (FR)
+- **Beauty & Ingredients page** — detailed product data (ingredients, brands, quantities)
 - **YouTube Beauty Shorts** — portrait 9:16 Shorts embedded from YouTube, searchable, targeted at the French market
-- **Full French UI** — language, content, and API region all target France
 
 ---
 
@@ -23,10 +22,6 @@ A French-market beauty blog built with **Next.js 14** (App Router). It lets user
 | Framework | Next.js 14 (App Router) |
 | Language | TypeScript |
 | Styling | Bootstrap 5 |
-| Product data | [Open Beauty Facts](https://fr.openbeautyfacts.org) |
-| Makeup catalog | [Makeup API](https://makeup-api.herokuapp.com) |
-| Videos | YouTube Data API v3 |
-| Barcode scan | Native `BarcodeDetector` Web API |
 
 ---
 
@@ -140,5 +135,3 @@ next-app/
 ## Barcode Scanning
 
 The scanner uses the browser-native **BarcodeDetector API** — no third-party library or server round-trip for detection. It is supported in Chrome and Safari 17+. A fallback message is shown on unsupported browsers.
-
-Barcode lookup first queries `fr.openbeautyfacts.org`, then falls back to `world.openbeautyfacts.org` for broader product coverage (e.g. sunscreens, pharmacy brands).
