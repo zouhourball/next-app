@@ -3,8 +3,41 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { BeautyFactProductType } from '@/app/types'
+import { IngredientAnalysis, analyseIngredients } from '@/lib/ingredientAnalysis'
 
 const BarcodeScanner = lazy(() => import('@/components/BarcodeScanner'))
+const ScanResult = lazy(() => import('@/components/ScanResult'))
+
+function scoreColor(score: number): string {
+  if (score >= 80) return '#2d9e5f'
+  if (score >= 60) return '#6abf69'
+  if (score >= 40) return '#f5a623'
+  if (score >= 20) return '#e07b39'
+  return '#d0021b'
+}
+
+function MiniScore({ score }: { score: number }) {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      width: 36,
+      height: 36,
+      borderRadius: '50%',
+      background: scoreColor(score),
+      color: '#fff',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '0.75rem',
+      fontWeight: 700,
+      boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+    }}>
+      {score}
+    </div>
+  )
+}
 
 export default function HomeSearch() {
   const [query, setQuery] = useState('')
@@ -13,7 +46,8 @@ export default function HomeSearch() {
   const [normalizedQuery, setNormalizedQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [scanning, setScanning] = useState(false)
-  const [scanResult, setScanResult] = useState<BeautyFactProductType | null>(null)
+  const [scanProduct, setScanProduct] = useState<BeautyFactProductType | null>(null)
+  const [scanAnalysis, setScanAnalysis] = useState<IngredientAnalysis | null>(null)
   const [scanError, setScanError] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router = useRouter()
@@ -70,7 +104,8 @@ export default function HomeSearch() {
 
   const handleScan = async (barcode: string) => {
     setScanning(false)
-    setScanResult(null)
+    setScanProduct(null)
+    setScanAnalysis(null)
     setScanError(null)
     setLoading(true)
     try {
@@ -79,13 +114,22 @@ export default function HomeSearch() {
       if (!res.ok || !data.product) {
         setScanError('Produit non trouvé pour ce code-barres.')
       } else {
-        setScanResult(data.product)
+        setScanProduct(data.product)
+        setScanAnalysis(data.analysis ?? null)
       }
     } catch {
       setScanError('Erreur lors de la recherche du produit.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleProductClick = (product: BeautyFactProductType) => {
+    const analysis = product.ingredients_text
+      ? analyseIngredients(product.ingredients_text)
+      : null
+    setScanProduct(product)
+    setScanAnalysis(analysis)
   }
 
   return (
@@ -119,7 +163,7 @@ export default function HomeSearch() {
           />
           <button
             type="button"
-            onClick={() => { setScanResult(null); setScanError(null); setScanning(true) }}
+            onClick={() => { setScanProduct(null); setScanAnalysis(null); setScanError(null); setScanning(true) }}
             title="Scanner un code-barres"
             style={{
               position: 'absolute',
@@ -166,53 +210,13 @@ export default function HomeSearch() {
         ))}
       </div>
 
-      {/* Scan result */}
+      {/* Scan error */}
       {scanError && (
         <p className="text-center text-danger mt-4">{scanError}</p>
       )}
-      {scanResult && (
-        <div className="mt-5">
-          <h5 className="mb-4 text-muted">Produit scanné</h5>
-          <div className="row g-4 justify-content-center">
-            <div className="col-12 col-sm-6 col-md-4 col-lg-3">
-              <div className="card h-100 border-dark">
-                {scanResult.image_url ? (
-                  <img
-                    src={scanResult.image_url}
-                    alt={scanResult.product_name}
-                    className="card-img-top"
-                    style={{ height: '180px', objectFit: 'contain', padding: '8px' }}
-                  />
-                ) : (
-                  <div
-                    className="card-img-top bg-light d-flex align-items-center justify-content-center"
-                    style={{ height: '180px' }}
-                  >
-                    <span className="text-muted" style={{ fontSize: '0.8rem' }}>Pas d&apos;image</span>
-                  </div>
-                )}
-                <div className="card-body">
-                  <h6 className="card-title">{scanResult.product_name || 'Produit inconnu'}</h6>
-                  {scanResult.brands && (
-                    <p className="text-muted mb-1" style={{ fontSize: '0.82rem' }}>{scanResult.brands}</p>
-                  )}
-                  {scanResult.quantity && (
-                    <p className="mb-0" style={{ fontSize: '0.8rem' }}>{scanResult.quantity}</p>
-                  )}
-                  {scanResult.ingredients_text && (
-                    <p className="text-muted mt-1 mb-0" style={{ fontSize: '0.72rem' }}>
-                      {scanResult.ingredients_text.slice(0, 120)}...
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Results */}
-      {!loading && !scanResult && results.length > 0 && (
+      {!loading && results.length > 0 && (
         <div className="mt-5">
           <h5 className="mb-4 text-muted">
             Résultats pour <strong className="text-dark">&quot;{normalizedQuery}&quot;</strong>
@@ -224,49 +228,87 @@ export default function HomeSearch() {
             <span className="ms-2" style={{ fontSize: '0.85rem' }}>· {results.length} produits</span>
           </h5>
           <div className="row g-4">
-            {results.map((product, i) => (
-              <div className="col-12 col-sm-6 col-md-4 col-lg-3" key={i}>
-                <div className="card h-100">
-                  {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.product_name}
-                      className="card-img-top"
-                      style={{ height: '180px', objectFit: 'contain', padding: '8px' }}
-                    />
-                  ) : (
-                    <div
-                      className="card-img-top bg-light d-flex align-items-center justify-content-center"
-                      style={{ height: '180px' }}
-                    >
-                      <span className="text-muted" style={{ fontSize: '0.8rem' }}>Pas d&apos;image</span>
+            {results.map((product, i) => {
+              const analysis = product.ingredients_text
+                ? analyseIngredients(product.ingredients_text)
+                : null
+              return (
+                <div className="col-12 col-sm-6 col-md-4 col-lg-3" key={i}>
+                  <div
+                    className="card h-100"
+                    onClick={() => handleProductClick(product)}
+                    style={{ cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+                    onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)')}
+                    onMouseLeave={e => (e.currentTarget.style.boxShadow = '')}
+                  >
+                    <div style={{ position: 'relative' }}>
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.product_name}
+                          className="card-img-top"
+                          style={{ height: '180px', objectFit: 'contain', padding: '8px' }}
+                        />
+                      ) : (
+                        <div
+                          className="card-img-top bg-light d-flex align-items-center justify-content-center"
+                          style={{ height: '180px' }}
+                        >
+                          <span className="text-muted" style={{ fontSize: '0.8rem' }}>Pas d&apos;image</span>
+                        </div>
+                      )}
+                      {analysis && <MiniScore score={analysis.score} />}
                     </div>
-                  )}
-                  <div className="card-body">
-                    <h6 className="card-title">{product.product_name}</h6>
-                    {product.brands && (
-                      <p className="text-muted mb-1" style={{ fontSize: '0.82rem' }}>
-                        {product.brands}
-                      </p>
-                    )}
-                    {product.quantity && (
-                      <p className="mb-0" style={{ fontSize: '0.8rem' }}>{product.quantity}</p>
-                    )}
-                    {product.ingredients_text && (
-                      <p className="text-muted mt-1 mb-0" style={{ fontSize: '0.72rem' }}>
-                        {product.ingredients_text.slice(0, 80)}...
-                      </p>
-                    )}
+                    <div className="card-body">
+                      <h6 className="card-title">{product.product_name}</h6>
+                      {product.brands && (
+                        <p className="text-muted mb-1" style={{ fontSize: '0.82rem' }}>
+                          {product.brands}
+                        </p>
+                      )}
+                      {product.quantity && (
+                        <p className="mb-0" style={{ fontSize: '0.8rem' }}>{product.quantity}</p>
+                      )}
+                      {analysis && (
+                        <div className="mt-2 d-flex gap-1 flex-wrap">
+                          {analysis.bad.length > 0 && (
+                            <span style={{ fontSize: '0.72rem', color: '#d0021b' }}>
+                              🔴 {analysis.bad.length} à éviter
+                            </span>
+                          )}
+                          {analysis.moderate.length > 0 && (
+                            <span style={{ fontSize: '0.72rem', color: '#e07b39' }}>
+                              🟡 {analysis.moderate.length} modérés
+                            </span>
+                          )}
+                          {analysis.good.length > 0 && (
+                            <span style={{ fontSize: '0.72rem', color: '#2d9e5f' }}>
+                              🟢 {analysis.good.length} bénéfiques
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {!analysis && product.ingredients_text && (
+                        <p className="text-muted mt-1 mb-0" style={{ fontSize: '0.72rem' }}>
+                          {product.ingredients_text.slice(0, 80)}...
+                        </p>
+                      )}
+                    </div>
+                    <div className="card-footer bg-transparent border-0 pb-3">
+                      <span style={{ fontSize: '0.75rem', color: '#999' }}>
+                        Cliquez pour l&apos;analyse complète →
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
 
       {/* Empty state */}
-      {!loading && !scanResult && query.trim().length >= 2 && results.length === 0 && (
+      {!loading && !scanProduct && query.trim().length >= 2 && results.length === 0 && (
         <p className="text-center text-muted mt-5">
           Aucun produit trouvé pour &quot;{query}&quot;.
         </p>
@@ -278,6 +320,17 @@ export default function HomeSearch() {
           <BarcodeScanner
             onScan={handleScan}
             onClose={() => setScanning(false)}
+          />
+        </Suspense>
+      )}
+
+      {/* Product detail modal (scan OR card click) */}
+      {scanProduct && (
+        <Suspense fallback={null}>
+          <ScanResult
+            product={scanProduct}
+            analysis={scanAnalysis}
+            onClose={() => { setScanProduct(null); setScanAnalysis(null) }}
           />
         </Suspense>
       )}

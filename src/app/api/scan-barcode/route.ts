@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { analyseIngredients } from '@/lib/ingredientAnalysis'
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code')
@@ -28,18 +29,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Produit non trouvé' }, { status: 404 })
     }
 
-    const p = data.product
+    const p = data.product!
+    const ingredientsText = p.ingredients_text_fr ?? p.ingredients_text ?? ''
+
     const product = {
       code: p.code ?? code,
       product_name: p.product_name ?? p.product_name_fr ?? '',
       brands: p.brands ?? '',
       quantity: p.quantity ?? '',
       image_url: p.image_front_url ?? p.image_url ?? '',
-      ingredients_text: p.ingredients_text_fr ?? p.ingredients_text ?? '',
+      ingredients_text: ingredientsText,
       categories: p.categories ?? '',
     }
 
-    return NextResponse.json({ product })
+    const analysis = ingredientsText ? analyseIngredients(ingredientsText) : null
+
+    return NextResponse.json({ product, analysis })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
