@@ -19,9 +19,6 @@ import Link from 'next/link'
           <li className="nav-item">
             <Link className='nav-link' href="/videos">Vidéos</Link>
           </li>
-          <li className="nav-item">
-            <Link className='nav-link' href="/contact">Contact</Link>
-          </li>
         </ul>
       </div>
     </nav>

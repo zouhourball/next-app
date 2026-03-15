@@ -36,6 +36,7 @@ export type BeautyFactProductType = {
   ingredients_text: string;
   categories: string;
   quantity: string;
+  labels?: string;
 }
 
 export type BeautyFactsResponseType = {
