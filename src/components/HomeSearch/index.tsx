@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { BeautyFactProductType } from '@/app/types'
-import { IngredientAnalysis, analyseIngredients } from '@/lib/ingredientAnalysis'
+import { analyseIngredients } from '@/lib/ingredientAnalysis'
 import ProductPlaceholder from '@/components/ProductPlaceholder'
 
 const BarcodeScanner = lazy(() => import('@/components/BarcodeScanner'))
-const ScanResult    = lazy(() => import('@/components/ScanResult'))
-const ShopDialog    = lazy(() => import('@/components/ShopDialog'))
+const ShopDialog     = lazy(() => import('@/components/ShopDialog'))
 
 // ── Score badge ────────────────────────────────────────────────────────────────
 function scoreColor(score: number) {
@@ -66,16 +65,13 @@ function LabelChips({ labels }: { labels?: string }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function HomeSearch() {
-  const [query, setQuery]               = useState('')
-  const [tags, setTags]                 = useState<string[]>([])
-  const [results, setResults]           = useState<BeautyFactProductType[]>([])
-  const [normalizedQuery, setNorm]      = useState('')
-  const [loading, setLoading]           = useState(false)
-  const [scanning, setScanning]         = useState(false)
-  const [scanProduct, setScanProduct]   = useState<BeautyFactProductType | null>(null)
-  const [scanAnalysis, setScanAnalysis] = useState<IngredientAnalysis | null>(null)
-  const [scanError, setScanError]       = useState<string | null>(null)
-  const [shopProduct, setShopProduct]   = useState<BeautyFactProductType | null>(null)
+  const [query, setQuery]         = useState('')
+  const [tags, setTags]           = useState<string[]>([])
+  const [results, setResults]     = useState<BeautyFactProductType[]>([])
+  const [normalizedQuery, setNorm]= useState('')
+  const [loading, setLoading]     = useState(false)
+  const [scanning, setScanning]   = useState(false)
+  const [shopProduct, setShopProduct] = useState<BeautyFactProductType | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router = useRouter()
 
@@ -118,28 +114,10 @@ export default function HomeSearch() {
     setQuery(q => q.trim() ? `${q.trim()} ${tag}` : tag)
   }
 
-  const handleScan = async (barcode: string) => {
-    setScanning(false); setScanProduct(null); setScanAnalysis(null); setScanError(null)
-    setLoading(true)
-    try {
-      const res  = await fetch(`/api/scan-barcode?code=${encodeURIComponent(barcode)}`)
-      const data = await res.json()
-      if (!res.ok || !data.product) {
-        setScanError('Produit non trouvé pour ce code-barres.')
-      } else {
-        setScanProduct(data.product)
-        setScanAnalysis(data.analysis ?? null)
-      }
-    } catch {
-      setScanError('Erreur lors de la recherche du produit.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const openAnalysis = (product: BeautyFactProductType) => {
-    setScanProduct(product)
-    setScanAnalysis(product.ingredients_text ? analyseIngredients(product.ingredients_text) : null)
+  // Barcode scan → navigate directly to product page
+  const handleScan = (barcode: string) => {
+    setScanning(false)
+    router.push(`/product/${barcode}`)
   }
 
   return (
@@ -167,7 +145,7 @@ export default function HomeSearch() {
           />
           <button
             type="button"
-            onClick={() => { setScanProduct(null); setScanAnalysis(null); setScanError(null); setScanning(true) }}
+            onClick={() => setScanning(true)}
             title="Scanner un code-barres"
             style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
               background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#6c757d' }}
@@ -194,8 +172,6 @@ export default function HomeSearch() {
         ))}
       </div>
 
-      {scanError && <p className="text-center text-danger mt-4">{scanError}</p>}
-
       {/* Results */}
       {!loading && results.length > 0 && (
         <div className="mt-5">
@@ -213,8 +189,10 @@ export default function HomeSearch() {
               const analysis = product.ingredients_text ? analyseIngredients(product.ingredients_text) : null
               return (
                 <div className="col-12 col-sm-6 col-md-4 col-lg-3" key={i}>
-                  <div className="card h-100 product-card" onClick={() => openAnalysis(product)}>
-
+                  <div
+                    className="card h-100 product-card"
+                    onClick={() => router.push(`/product/${product.code}`)}
+                  >
                     {/* Image or cartoon placeholder */}
                     <div style={{ position: 'relative' }}>
                       {product.image_url ? (
@@ -256,12 +234,12 @@ export default function HomeSearch() {
                       )}
                     </div>
 
-                    {/* Footer with two actions */}
+                    {/* Footer actions */}
                     <div className="card-footer bg-transparent border-top-0 pb-3 pt-0 d-flex gap-2">
                       <button
                         className="btn btn-sm btn-outline-secondary flex-grow-1"
                         style={{ fontSize: '0.72rem', borderRadius: '8px' }}
-                        onClick={e => { e.stopPropagation(); openAnalysis(product) }}
+                        onClick={e => { e.stopPropagation(); router.push(`/product/${product.code}`) }}
                       >
                         🔬 Analyse
                       </button>
@@ -282,7 +260,7 @@ export default function HomeSearch() {
       )}
 
       {/* Empty state */}
-      {!loading && !scanProduct && query.trim().length >= 2 && results.length === 0 && (
+      {!loading && query.trim().length >= 2 && results.length === 0 && (
         <p className="text-center text-muted mt-5">Aucun produit trouvé pour &quot;{query}&quot;.</p>
       )}
 
@@ -290,17 +268,6 @@ export default function HomeSearch() {
       {scanning && (
         <Suspense fallback={null}>
           <BarcodeScanner onScan={handleScan} onClose={() => setScanning(false)} />
-        </Suspense>
-      )}
-
-      {/* Ingredient analysis modal */}
-      {scanProduct && (
-        <Suspense fallback={null}>
-          <ScanResult
-            product={scanProduct}
-            analysis={scanAnalysis}
-            onClose={() => { setScanProduct(null); setScanAnalysis(null) }}
-          />
         </Suspense>
       )}
 
